@@ -1,7 +1,6 @@
-
-                                                                      ******************
-                                                                      *  INSTRUCTIONS *
-                                                                      ******************
+******************
+*  INSTRUCTIONS *
+******************
 
 Welcome to the U-Pack Digital Object Formatter. This tool is designed to format digital objects in preparation for transfer to Preservation and ingest into the Unified Digital Curation System (UDCS). Input is a single directory that contains any number of digital objects (as folders) and a CSV spreadsheet that contains information about the digital objects in the target directory.
 
@@ -30,15 +29,15 @@ OUTPUT: individual files, entitled 'metadata', as CSV, RDF-XML, and JSON-LD, tha
 
 - The input CSV should consist of one row per object, plus a header row that contains the following fields:
 
-        System UUID - to be assigned at registration (simply use "????" for this field)
-        Local ID - use departmental naming conventions
-        Department Responsible - use a controlled vocabulary, with no punctuation or symbols
-        Person Responsible - use only a VT PID/username
-        Collection - use a controlled vocabulary, with no punctuation or symbols
-        Brief Description - this is for developer use, and should be a short phrase
-            (something between dc:description and dc:title)
-        Object URI - for legacy platforms like VTechWorks, use the handle of the item
-        Collection URI - can link to an RDF representation for the collection, posted online
+System UUID - to be assigned at registration (simply use "????" for this field)
+Local ID - use departmental naming conventions
+Department Responsible - use a controlled vocabulary, with no punctuation or symbols
+Person Responsible - use only a VT PID/username
+Collection - use a controlled vocabulary, with no punctuation or symbols
+Brief Description - this is for developer use, and should be a short phrase
+(something between dc:description and dc:title)
+Object URI - for legacy platforms like VTechWorks, use the handle of the item
+Collection URI - can link to an RDF representation for the collection, posted online
 
 - For digital objects that already contain 'metadata.csv' files, the user is prompted whether to overwrite ALL or NONE of these. If the user chooses not to overwrite existing 'metadata.csv' files, U-Pack will only write 'metadata.csv' files for the objects that do not have them already.
 - The 'metadata.csv' files consist of 2 rows: a header row and a row of values, taken from the corresponding line of the input CSV.
@@ -50,10 +49,10 @@ OUTPUT: individual files, entitled 'metadata', as CSV, RDF-XML, and JSON-LD, tha
 INPUT: a directory containing several digital objects;
 
 OUTPUT: the tool performs the following tasks:
-        Assigns a system identifier to each object
-        Renames the objects and records the system identifier in the 'metadata' files
-        Logs this event in a file, "Log4Preservation"
-        [Creates a placeholder metadata record on the metadata server - not set up yet]
+Assigns a system identifier to each object
+Renames the objects and records the system identifier in the 'metadata' files
+Logs this event in a file, "Log4Preservation"
+[Creates a placeholder metadata record on the metadata server - not set up yet]
 
 - Some of these functions will differ in the future, depending on what is developed by the Digital Library Development team.
 
@@ -105,9 +104,8 @@ FOR MORE INFORMATION:
 =======================
 For more instructions, see the DI&PS collaboration wiki:
 
-    <<https://webapps.es.vt.edu/confluence/display/DIPS/Instructions+for+Using+the+U-Pack+Tool>>
+<<https://webapps.es.vt.edu/confluence/display/DIPS/Instructions+for+Using+the+U-Pack+Tool>>
 
 For questions about the tool and support, contact:
 
-    L. I. Menzies, limen (at) vt (dot) edu
-
+L. I. Menzies, limen (at) vt (dot) edu
