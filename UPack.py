@@ -98,7 +98,7 @@ class ToggleFrame(tk.Frame):
             xpad = 7
             ypad = 5
             basefont=14
-            spacepad = 172
+            spacepad = 175
         #
         self.show_frame = Frame(self)
         self.space = Label(self.show_frame, text='')
@@ -833,8 +833,8 @@ def main():
         w = 711
         h = 558
     else:
-        w = 705
-        h = 561
+        w = 709
+        h = 562
     ws = root.winfo_screenwidth()
     hs = root.winfo_screenheight()
     x = (ws/2) - (w/2)
