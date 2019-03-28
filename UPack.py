@@ -247,7 +247,7 @@ class ObjFormatter:
         cancel1 = Button(frame3, text='Quit', command=root.quit)
         cancel1.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
         cancel1.grid(column=0, row=0, pady=5, padx=xpadd, sticky=E)
-        instruct = Button(frame3, text='Instructions', command=instructions)
+        instruct = Button(frame3, text='Instructions', command=lambda: instructions(basefont))
         instruct.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
         instruct.grid(column=1, row=0, pady=5, padx=buttonpad, sticky=E)
         submit1 = Button(frame3, text='Submit', command=lambda: self.run_procs(root, frame2))
@@ -792,7 +792,7 @@ class ObjFormatter:
             self.trans_manifest(itemsdir)
         return
 
-def instructions():
+def instructions(fontsize):
     new = Tk()
     nw = 850
     nh = 600
@@ -807,14 +807,14 @@ def instructions():
     new.grid_rowconfigure(0, weight=1)
     new.grid_columnconfigure(0, weight=1)
     txt = Text(new, relief=SUNKEN, bd=4, fg='black', bg=vtsmoke)
-    txt.config(font=('Times', 12), wrap='word', padx=40, pady=10)
+    txt.config(pady=10, padx=40, font=('Times', fontsize), wrap='word')
     txt.grid(column=0, row=0, sticky=NSEW)
     scroller = Scrollbar(new, orient='vertical', command=txt.yview)
     scroller.grid(column=1, row=0, sticky=NSEW)
     txt['yscrollcommand'] = scroller.set
     OKa = Button(new, command=new.destroy, text='OK')
-    OKa.configure(bg=hokiestone, fg='black', font=('Arial', 11), highlightbackground=vtmaroon, relief=RAISED, bd=4)
-    OKa.grid(column=0, row=0, sticky=NSEW)
+    OKa.configure(bg=hokiestone, bd=4, fg='black', font=('Arial', fontsize), highlightbackground=vtmaroon, relief=RAISED)
+    OKa.grid(column=0, row=1, sticky=NSEW)
     instructtext = resource_path("UPackInstructions.txt")
     if os.path.exists(instructtext):
         with open(instructtext) as inst:
