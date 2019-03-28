@@ -85,10 +85,10 @@ class ToggleFrame(tk.Frame):
         self.show.set(0)
         #
         if MY_OS == 'Windows':
-            xpad = 10
+            xpad = 0
             ypad = 5
             basefont = 10
-            spacepad = 172
+            spacepad = 152
         elif MY_OS == 'Linux':
             xpad = 7
             ypad = 5
@@ -150,7 +150,7 @@ class ToggleFrame(tk.Frame):
         #
         self.sub_frame.configure(bd=2, bg=hokiestone, relief='raised')
         self.show_frame.configure(bd=2, bg=hokiestone, relief='flat')
-        self.show_frame.grid(column=0, row=3, pady=0, padx=0, sticky=N)
+        self.show_frame.grid(column=0, row=3, pady=0, padx=0, sticky=NSEW)
 
     def tog_options(self):
         if self.show.get() == 1:
@@ -166,19 +166,25 @@ class ObjFormatter:
     def __init__(self, root):
         #
         if MY_OS == 'Windows':
+            imgpad = 155
             xpadd = 5
             ypadd = 5
             basefont = 10
-            buttonpad = 190
+            entryfont = 11
+            buttonpad = 202
         elif MY_OS == 'Linux':
+            imgpad = 170
             xpadd = 5
             ypadd = 5
             basefont = 12
+            entryfont = 14
             buttonpad = 210
         else:
+            imgpad = 190
             xpadd = 5
             ypadd = 5
             basefont = 14
+            entryfont = 16
             buttonpad = 210
         #
         # Main widget background image
@@ -187,7 +193,7 @@ class ObjFormatter:
         self.logoimage = ImageTk.PhotoImage(PIL.Image.open(logoimgpath))
         self.logoimglabel = Label(frame0, image=self.logoimage)
         self.logoimglabel.configure(bg='black', bd=0, relief=FLAT)
-        self.logoimglabel.grid(column=0, row=0, pady=7, padx=190, sticky=E)
+        self.logoimglabel.grid(column=0, row=0, pady=7, padx=imgpad, sticky=E)
         frame0.configure(bg=hokiestone, bd=5, relief=SUNKEN)
         frame0.grid(column=0, row=0, pady=0, padx=0, sticky=NSEW)
         # Entry for the Folder that contains the items
@@ -197,10 +203,10 @@ class ObjFormatter:
         labl1.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify=CENTER)
         labl1.grid(column=0, row=0, pady=5, padx=5, sticky=E)
         browse1 = Button(frame1, text='Browse', command=lambda: self.ask_folder(itemfolder))
-        browse1.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', basefont))
+        browse1.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
         browse1.grid(column=2, row=0, pady=5, padx=5, sticky=W)
         self.e1 = Entry(frame1, width=50, textvariable=itemfolder)
-        self.e1.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', basefont + 4), justify=LEFT)
+        self.e1.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', entryfont + 2), justify=LEFT)
         self.e1.grid(column=1, row=0, pady=5, padx=0, sticky=W)
         # Entry for the master CSV metadata file
         csvfile = StringVar(frame1)
@@ -208,10 +214,10 @@ class ObjFormatter:
         labl2.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify=CENTER)
         labl2.grid(column=0, row=1, pady=5, padx=5, sticky=E)
         browse2 = Button(frame1, text='Browse', command=lambda: self.ask_file(csvfile))
-        browse2.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', basefont), relief=RAISED)
+        browse2.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont), relief=RAISED)
         browse2.grid(column=2, row=1, pady=5, padx=5, sticky=W)
         self.e2 = Entry(frame1, width=50, textvariable=csvfile)
-        self.e2.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', basefont + 4), justify=LEFT)
+        self.e2.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', entryfont + 2), justify=LEFT)
         self.e2.grid(column=1, row=1, pady=5, padx=0, sticky=W)
         # Drop-Down of the column headings in the master CSV file
         labl3 = Label(frame1, text='CSV Col.\nw/ ID\'s:')
@@ -225,10 +231,10 @@ class ObjFormatter:
         self.hdmenu.configure(width=20, bg=vtmaroon, font=('Arial', basefont + 2))
         self.hdmenu.grid(column=1, row=2, pady=5, padx=0, sticky=E)
         self.e3 = Entry(frame1, width=24, textvariable=self.variable)
-        self.e3.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', basefont + 4), justify=LEFT)
+        self.e3.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', entryfont + 2), justify=LEFT)
         self.e3.grid(column=1, row=2, pady=5, padx=0, sticky=W)
         refresh1 = Button(frame1, text='Refresh', command=lambda: self.get_headers(csvfile))
-        refresh1.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', basefont))
+        refresh1.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
         refresh1.grid(column=2, row=2, pady=5, padx=5, sticky=W)
         frame1.configure(bg=vtmaroon, bd=5, relief=RAISED)
         frame1.grid(column=0, row=1, pady=0, padx=0, sticky=NSEW)
@@ -239,16 +245,16 @@ class ObjFormatter:
         # Buttons for Quit, Instructions, and Submit
         frame3 = Frame(root)
         cancel1 = Button(frame3, text='Quit', command=root.quit)
-        cancel1.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', basefont + 2))
+        cancel1.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
         cancel1.grid(column=0, row=0, pady=5, padx=xpadd, sticky=E)
         instruct = Button(frame3, text='Instructions', command=instructions)
-        instruct.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', basefont + 2))
+        instruct.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
         instruct.grid(column=1, row=0, pady=5, padx=buttonpad, sticky=E)
         submit1 = Button(frame3, text='Submit', command=lambda: self.run_procs(root, frame2))
-        submit1.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', basefont + 2))
+        submit1.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
         submit1.grid(column=2, row=0, pady=5, padx=xpadd, sticky=E)
         frame3.configure(bg=vtmaroon, bd=5, relief=RAISED)
-        frame3.grid(column=0, row=3, pady=0, padx=0, sticky=N)
+        frame3.grid(column=0, row=3, pady=0, padx=0, sticky=NSEW)
 
     def ask_folder(self, foname):
         foname.set(os.path.abspath(askdirectory(initialdir=os.getcwd(), title='Select the Folder')))
@@ -821,8 +827,8 @@ def instructions():
 def main():
     root = tk.Tk()
     if MY_OS == 'Windows':
-        w = 734
-        h = 581
+        w = 633
+        h = 577
     elif MY_OS == 'Linux':
         w = 711
         h = 558
