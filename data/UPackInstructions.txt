@@ -1,0 +1,112 @@
+﻿
+                                                                      ******************
+                                                                      *  INSTRUCTIONS *
+                                                                      ******************
+
+Welcome to the U-Pack Digital Object Formatter. This tool is designed to format digital objects in preparation for transfer to Preservation and ingest into the Unified Digital Curation System (UDCS). Input is a single directory that contains any number of digital objects (as folders) and a CSV spreadsheet that contains information about the digital objects in the target directory.
+
+- One row of the CSV spreadsheet = One digital object in the target directory
+- Each digital object folder must be named according to established departmental file-naming conventions.
+- These folder names are the same as the "Local Identifier" in the master CSV spreadsheet.
+
+*NOTE: You will be asked whether you are running U-Pack on these objects for the first time. The default answer is "No". Select "Yes" only once for any set of objects. The U-Pack will move each object into a folder with the same name.
+
+*NOTE: You may choose whether the U-Pack asks you if you want to continue, after each action taken. This gives you the opportunity to troubleshoot and step through each action one at a time. For example, if you accidentally select "Yes" to the "pre-pack" prompt, and you would like to stop the U-Pack before it moves on to the next option, you can do so. The default is to run all options without prompting.
+
+========
+OPTIONS:
+========
+
+- U-Pack Options are hidden and the default is to run all options. You may check "Show Options" and use the checkboxes to run actions individually.
+- The available 'Options' are run sequentially, from left to right, since options to the left (e.g. 'Create Min Metadata') should be performed BEFORE options to the right (e.g. BagIt).
+- Individual options can be selected, multiple times, but be sure to run them in the proper sequence. Run processes that change the contents of the digital objects, such as SplitCSV and Inventory, before Bagging and Tarring the objects.
+
+------------------------------
+(a) Create Min Metadata
+------------------------------
+INPUT: a directory containing several digital objects, and a single CSV spreadsheet containing information about each object in the target directory;
+
+OUTPUT: individual files, entitled 'metadata', as CSV, RDF-XML, and JSON-LD, that contain the minimal information required for each object;
+
+- The input CSV should consist of one row per object, plus a header row that contains the following fields:
+
+        System UUID - to be assigned at registration (simply use "????" for this field)
+        Local ID - use departmental naming conventions
+        Department Responsible - use a controlled vocabulary, with no punctuation or symbols
+        Person Responsible - use only a VT PID/username
+        Collection - use a controlled vocabulary, with no punctuation or symbols
+        Brief Description - this is for developer use, and should be a short phrase
+            (something between dc:description and dc:title)
+        Object URI - for legacy platforms like VTechWorks, use the handle of the item
+        Collection URI - can link to an RDF representation for the collection, posted online
+
+- For digital objects that already contain 'metadata.csv' files, the user is prompted whether to overwrite ALL or NONE of these. If the user chooses not to overwrite existing 'metadata.csv' files, U-Pack will only write 'metadata.csv' files for the objects that do not have them already.
+- The 'metadata.csv' files consist of 2 rows: a header row and a row of values, taken from the corresponding line of the input CSV.
+- This minimal metadata is embedded within each digital object. It is entirely separate from the full metadata record stored in the system.
+
+-------------------------
+(b) Register Objects
+-------------------------
+INPUT: a directory containing several digital objects;
+
+OUTPUT: the tool performs the following tasks:
+        Assigns a system identifier to each object
+        Renames the objects and records the system identifier in the 'metadata' files
+        Logs this event in a file, "Log4Preservation"
+        [Creates a placeholder metadata record on the metadata server - not set up yet]
+
+- Some of these functions will differ in the future, depending on what is developed by the Digital Library Development team.
+
+---------------------------------
+(c) Generate 'manifest.csv'
+---------------------------------
+INPUT: a directory containing several digital objects;
+
+OUTPUT: individual, human-readable inventory files, entitled 'manifest.csv', which are placed in the top-level folder of each corresponding object;
+
+- Digital objects that already have a 'manifest.csv' file are skipped. In order to re-run this inventory, you must first delete the existing 'manifest.csv' file manually.
+- The 'manifest.csv' files contain a header row and several rows of values, with each subsequent row corresponding to one file in the digital object. Columns correspond to values, such as file path, size, and md5.
+- Md5 hashes are generated for each file within the digital object.
+- Folders and directory tree information can be found in the file path for each file within the object.
+- also included is a "Comments" row, where any information about the processing of the object (e.g. if a virus scan of the object fails).
+
+------------
+(d) BagIt:
+------------
+INPUT: a directory containing several digital objects;
+
+OUTPUT: each digital object is turned into a "bag" according to the Library of Congress BagIt specification;
+
+- To prevent bags within bags, the application looks for a folder entitled 'data' within the top-level folder of the digital object. If this folder exists, the user is prompted whether to create the bag, anyway.
+- Bagging should be done AFTER the Options that precede it.
+
+----------------------
+(e) TAR Objects:
+----------------------
+INPUT: a directory containing several digital objects;
+
+OUTPUT: a directory labeled with the ending '-tarred' that contains gzipped TAR files of each of the digital objects;
+
+- Only folders are Tarred. Non-folders are ignored.
+- If a TAR file exists with the same name as the input object, this object is skipped and the user is given a warning. These files must be removed from the destination folder before those objects can be Tarred again.
+
+---------------------------
+(f) Transfer Manifest:
+---------------------------
+INPUT: a directory containing items that will be transferred to Preservation;
+
+OUTPUT: a transfer manifest file, entitled 'Transfer_<name of input folder>_<date>_<time>.txt", which contains filenames and md5 checksums for every file within the target directory, to be used as a comparison file after transfer to Preservation;
+
+- The transfer manifest is placed within the parent folder of the input folder.
+- After the contents of the target directory are transferred to Preservation, Preservation staff will run this application again. The resulting transfer manifest should be IDENTICAL to the one produced prior to transfer. If it is not identical, that means that something went wrong with the transfer.
+
+=======================
+FOR MORE INFORMATION:
+=======================
+For more instructions, see the DI&PS collaboration wiki:
+
+    <<https://webapps.es.vt.edu/confluence/display/DIPS/Instructions+for+Using+the+U-Pack+Tool>>
+
+For questions about the tool and support, contact:
+
+    L. I. Menzies, limen (at) vt (dot) edu
