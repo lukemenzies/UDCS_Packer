@@ -2,16 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="cd3b5dfa-de9c-4b43-a04e-64c2f0d947f3" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/UPack_v2.0.0.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/UPack_v2.0.0.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../UPack2.0.0/UPack.icns" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../UPack2.0.0/UPack.ico" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../UPack2.0.0/UPack.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../UPack2.0.0/UPackInstructions.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../UPack2.0.0/UPackLogo300.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/UPack_v2.0.0.py" beforeDir="false" afterPath="$PROJECT_DIR$/UPack_v2.0.0.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -24,8 +15,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/UPack_v2.0.0.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="142">
-              <caret line="77" selection-start-line="77" selection-end-line="77" />
+            <state relative-caret-position="255">
+              <caret line="17" column="35" selection-start-line="17" selection-start-column="35" selection-end-line="17" selection-end-column="35" />
               <folding>
                 <element signature="e#2078#2088#0" expanded="true" />
               </folding>
@@ -169,12 +160,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1561493254140</updated>
-      <workItem from="1561493259497" duration="7303000" />
+      <workItem from="1561493259497" duration="7781000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="7303000" />
+    <option name="totallyTimeSpent" value="7781000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="13" y="23" width="1400" height="837" extended-state="0" />
@@ -191,7 +182,7 @@
       <window_info anchor="bottom" id="Event Log" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32885906" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.32885906" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -212,8 +203,8 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/UPack_v2.0.0.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="142">
-          <caret line="77" selection-start-line="77" selection-end-line="77" />
+        <state relative-caret-position="255">
+          <caret line="17" column="35" selection-start-line="17" selection-start-column="35" selection-end-line="17" selection-end-column="35" />
           <folding>
             <element signature="e#2078#2088#0" expanded="true" />
           </folding>

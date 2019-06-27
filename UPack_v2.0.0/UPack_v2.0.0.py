@@ -10,12 +10,12 @@ Virginia Polytechnic Institute and State University
 Blacksburg, Virginia 24061
 
 Created 2018-05-01 as "UDOF" by L. I. Menzies
-This Version Last Updated 2019-03-07 by L. I. Menzies
+This Version Last Updated 2019-06-27 by L. I. Menzies
 
 ====================================================================
 This application is designed to do the following:
     (a) Creates minimal metadata files for each object in the target
-        directory, as CSV, RDF-XML, and JSON-LD
+        directory, as CSV, RDF-XML (and JSON-LD)
     (b) Registers the objects in the UDCS: Retrieves UUID's from the
         system naming authority, Assigns them to the digital objects,
         Logs these in a Processing Log, and Creates place-holder
