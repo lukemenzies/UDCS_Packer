@@ -39,48 +39,49 @@ or contact L. I. Menzies = limen (at) vt (dot) edu
 ====================================================================
 """
 
+import csv
+import hashlib
+import io
+import math
+import mimetypes
+import platform
+import shutil
+import sys
+import tarfile
+import time
+import tkinter as tk
+import uuid
+from os import getcwd, listdir, mkdir, path, remove, rename, stat, walk
+from tkinter import messagebox, Button, Entry, Label, Checkbutton, Frame, Toplevel, OptionMenu, Text, Scrollbar
+from tkinter.filedialog import askdirectory, askopenfilename, StringVar, IntVar
 
-import Tkinter as tk
-from Tkinter import *
-import tkMessageBox, tkFileDialog, bagit, tarfile, mimetypes
-import os, rdflib, io, shutil, platform, csv, PIL
-import math, time, hashlib, sha3, uuid, urllib, lxml, html5lib
-import defusedxml.ElementTree as ET
-from shutil import copyfile
-from tkFileDialog import *
-from PIL import ImageTk
-import PIL.Image
-from rdflib import *
-from rdflib import URIRef
+import bagit
+from PIL import Image, ImageTk
+from rdflib import URIRef, Graph, BNode, Literal
 from rdflib.namespace import *
-from rdflib.plugins import *
-import SPARQLWrapper
-from SPARQLWrapper import *
-
 
 """ Global color definitions, w/ official VT RGB values """
-vtmaroon = '#%02x%02x%02x' %(134, 31, 65)
-vtorange = '#%02x%02x%02x' %(232, 119, 34)
-hokiestone = '#%02x%02x%02x' %(117, 120, 123)
-vtwhite = '#%02x%02x%02x' %(255, 255, 255)
-vtsmoke = '#%02x%02x%02x' %(229, 225, 230)
-vtgray = '#%02x%02x%02x' %(215, 210, 203)
+vtmaroon = '#%02x%02x%02x' % (134, 31, 65)
+vtorange = '#%02x%02x%02x' % (232, 119, 34)
+hokiestone = '#%02x%02x%02x' % (117, 120, 123)
+vtwhite = '#%02x%02x%02x' % (255, 255, 255)
+vtsmoke = '#%02x%02x%02x' % (229, 225, 230)
+vtgray = '#%02x%02x%02x' % (215, 210, 203)
 
 MY_OS = platform.system()
 
 
 def resource_path(relative_path):
     """ Fixes the problem with PyInstaller not hooking associated files """
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
+    base_path = getattr(sys, '_MEIPASS', path.dirname(path.abspath(__file__)))
+    return path.join(base_path, relative_path)
 
-class ToggleFrame(tk.Frame):
+
+class ToggleFrame(Frame):
     """ Creates a toggle frame for optional functions """
+
     def __init__(self, parent):
-        tk.Frame.__init__(self, parent)
+        Frame.__init__(self, parent)
         self.show = IntVar()
         self.show.set(0)
         #
@@ -97,48 +98,56 @@ class ToggleFrame(tk.Frame):
         else:
             xpad = 7
             ypad = 5
-            basefont=14
+            basefont = 14
             spacepad = 175
         #
         self.show_frame = Frame(self)
         self.space = Label(self.show_frame, text='')
-        self.space.configure(fg=hokiestone, bg=hokiestone, relief=FLAT)
-        self.space.grid(column=0, row=0, pady=0, padx=spacepad, sticky=E)
-        self.togButton = Checkbutton(self.show_frame, text='Show Options', command=self.tog_options, variable=self.show, fg='black', bg=hokiestone, bd=4, font=('Arial', basefont), justify=LEFT)
-        self.togButton.grid(column=1, row=0, pady=0, padx=xpad, sticky=W)
+        self.space.configure(fg=hokiestone, bg=hokiestone, relief='flat')
+        self.space.grid(column=0, row=0, pady=0, padx=spacepad, sticky='e')
+        self.togButton = Checkbutton(self.show_frame, text='Show Options', command=self.tog_options, variable=self.show,
+                                     fg='black', bg=hokiestone, bd=4, font=('Arial', basefont), justify='left')
+        self.togButton.grid(column=1, row=0, pady=0, padx=xpad, sticky='w')
         self.prompt = IntVar()
         self.prompt.set(0)
-        self.promptButton = Checkbutton(self.show_frame, text='Prompt after Each Action?', variable=self.prompt, fg='black', bg=hokiestone, bd=4, font=('Arial', basefont), justify=LEFT)
-        self.promptButton.grid(column=2, row=0, pady=0, padx=xpad, sticky=W)
+        self.promptButton = Checkbutton(self.show_frame, text='Prompt after Each Action?', variable=self.prompt,
+                                        fg='black', bg=hokiestone, bd=4, font=('Arial', basefont), justify='left')
+        self.promptButton.grid(column=2, row=0, pady=0, padx=xpad, sticky='w')
         #
         self.sub_frame = Frame(self)
         labl4 = Label(self.sub_frame, text='Options:')
-        labl4.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify=CENTER)
-        labl4.grid(column=0, row=0, pady=5, padx=5, sticky=W)
+        labl4.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify='center')
+        labl4.grid(column=0, row=0, pady=5, padx=5, sticky='w')
         # Options checkbuttons
         # Metadata
         self.metavar = IntVar(self.sub_frame)
-        meta_chk = Checkbutton(self.sub_frame, text='Create min\nmetadata files', variable=self.metavar, fg='black', bg=hokiestone, relief=FLAT, bd=4, font=('Arial', basefont), justify=LEFT)
+        meta_chk = Checkbutton(self.sub_frame, text='Create min\nmetadata files', variable=self.metavar, fg='black',
+                               bg=hokiestone, relief='flat', bd=4, font=('Arial', basefont), justify='left')
         meta_chk.grid(column=1, row=0, pady=5, padx=xpad)
         # Register objects
         self.regisvar = IntVar(self)
-        regis_chk = Checkbutton(self.sub_frame, text='Register\nObjects', variable=self.regisvar, fg='black', bg=hokiestone, relief=FLAT, bd=4, font=('Arial', basefont), justify=LEFT)
+        regis_chk = Checkbutton(self.sub_frame, text='Register\nObjects', variable=self.regisvar, fg='black',
+                                bg=hokiestone, relief='flat', bd=4, font=('Arial', basefont), justify='left')
         regis_chk.grid(column=2, row=0, pady=5, padx=xpad)
         # Inventory
         self.invenvar = IntVar(self)
-        inv_chk = Checkbutton(self.sub_frame, text='Generate\n\'manifest.csv\'', variable=self.invenvar, fg='black', bg=hokiestone, relief=FLAT, bd=4, font=('Arial', basefont), justify=LEFT)
+        inv_chk = Checkbutton(self.sub_frame, text='Generate\n\'manifest.csv\'', variable=self.invenvar, fg='black',
+                              bg=hokiestone, relief='flat', bd=4, font=('Arial', basefont), justify='left')
         inv_chk.grid(column=3, row=0, pady=5, padx=xpad)
         # BagIt
         self.bagitvar = IntVar(self)
-        bagit_chk = Checkbutton(self.sub_frame, text='BagIt\n', variable=self.bagitvar, fg='black', bg=hokiestone, relief=FLAT, bd=4, font=('Arial', basefont), justify=LEFT)
+        bagit_chk = Checkbutton(self.sub_frame, text='BagIt\n', variable=self.bagitvar, fg='black', bg=hokiestone,
+                                relief='flat', bd=4, font=('Arial', basefont), justify='left')
         bagit_chk.grid(column=4, row=0, pady=5, padx=xpad)
         # Tar
         self.tarvar = IntVar(self)
-        tar_chk = Checkbutton(self.sub_frame, text='TAR\nObjects', variable=self.tarvar, fg='black', bg=hokiestone, relief=FLAT, bd=4, font=('Arial', basefont), justify=LEFT)
+        tar_chk = Checkbutton(self.sub_frame, text='TAR\nObjects', variable=self.tarvar, fg='black', bg=hokiestone,
+                              relief='flat', bd=4, font=('Arial', basefont), justify='left')
         tar_chk.grid(column=5, row=0, pady=5, padx=xpad)
         # Transfer manifest
         self.transvar = IntVar(self)
-        trans_chk = Checkbutton(self.sub_frame, text='Transfer\nManifest', variable=self.transvar, fg='black', bg=hokiestone, relief=FLAT, bd=4, font=('Arial', basefont), justify=LEFT)
+        trans_chk = Checkbutton(self.sub_frame, text='Transfer\nManifest', variable=self.transvar, fg='black',
+                                bg=hokiestone, relief='flat', bd=4, font=('Arial', basefont), justify='left')
         trans_chk.grid(column=6, row=0, pady=5, padx=xpad)
         # Set defaults to "checked"
         self.metavar.set(1)
@@ -150,11 +159,11 @@ class ToggleFrame(tk.Frame):
         #
         self.sub_frame.configure(bd=2, bg=hokiestone, relief='raised')
         self.show_frame.configure(bd=2, bg=hokiestone, relief='flat')
-        self.show_frame.grid(column=0, row=3, pady=0, padx=0, sticky=NSEW)
+        self.show_frame.grid(column=0, row=3, pady=0, padx=0, sticky='nsew')
 
     def tog_options(self):
         if self.show.get() == 1:
-            self.sub_frame.grid(column=0, row=0, pady=0, padx=0, sticky=NSEW)
+            self.sub_frame.grid(column=0, row=0, pady=0, padx=0, sticky='nsew')
             self.togButton.configure(text='Hide Options')
         else:
             self.sub_frame.grid_forget()
@@ -163,6 +172,7 @@ class ToggleFrame(tk.Frame):
 
 class ObjFormatter:
     """ The main widget """
+
     def __init__(self, root):
         #
         if MY_OS == 'Windows':
@@ -190,86 +200,88 @@ class ObjFormatter:
         # Main widget background image
         frame0 = Frame(root)
         logoimgpath = resource_path("UPackLogo300.jpg")
-        self.logoimage = ImageTk.PhotoImage(PIL.Image.open(logoimgpath))
+        logo = Image.open(logoimgpath)
+        self.logoimage = ImageTk.PhotoImage(logo)
         self.logoimglabel = Label(frame0, image=self.logoimage)
-        self.logoimglabel.configure(bg='black', bd=0, relief=FLAT)
-        self.logoimglabel.grid(column=0, row=0, pady=7, padx=imgpad, sticky=E)
-        frame0.configure(bg=hokiestone, bd=5, relief=SUNKEN)
-        frame0.grid(column=0, row=0, pady=0, padx=0, sticky=NSEW)
+        self.logoimglabel.configure(bg='black', bd=0, relief='flat')
+        self.logoimglabel.grid(column=0, row=0, pady=7, padx=imgpad, sticky='e')
+        frame0.configure(bg=hokiestone, bd=5, relief='sunken')
+        frame0.grid(column=0, row=0, pady=0, padx=0, sticky='nsew')
         # Entry for the Folder that contains the items
         frame1 = Frame(root)
         itemfolder = StringVar(frame1)
         labl1 = Label(frame1, text='Folder of\nItems:')
-        labl1.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify=CENTER)
-        labl1.grid(column=0, row=0, pady=5, padx=5, sticky=E)
+        labl1.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify='center')
+        labl1.grid(column=0, row=0, pady=5, padx=5, sticky='e')
         browse1 = Button(frame1, text='Browse', command=lambda: self.ask_folder(itemfolder))
         browse1.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
-        browse1.grid(column=2, row=0, pady=5, padx=5, sticky=W)
+        browse1.grid(column=2, row=0, pady=5, padx=5, sticky='w')
         self.e1 = Entry(frame1, width=50, textvariable=itemfolder)
-        self.e1.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', entryfont + 2), justify=LEFT)
-        self.e1.grid(column=1, row=0, pady=5, padx=0, sticky=W)
+        self.e1.configure(bg=vtsmoke, relief='sunken', bd=2, font=('Arial', entryfont + 2), justify='left')
+        self.e1.grid(column=1, row=0, pady=5, padx=0, sticky='w')
         # Entry for the master CSV metadata file
         csvfile = StringVar(frame1)
         labl2 = Label(frame1, text='CSV File:')
-        labl2.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify=CENTER)
-        labl2.grid(column=0, row=1, pady=5, padx=5, sticky=E)
+        labl2.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify='center')
+        labl2.grid(column=0, row=1, pady=5, padx=5, sticky='e')
         browse2 = Button(frame1, text='Browse', command=lambda: self.ask_file(csvfile))
-        browse2.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont), relief=RAISED)
-        browse2.grid(column=2, row=1, pady=5, padx=5, sticky=W)
+        browse2.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont),
+                          relief='raised')
+        browse2.grid(column=2, row=1, pady=5, padx=5, sticky='w')
         self.e2 = Entry(frame1, width=50, textvariable=csvfile)
-        self.e2.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', entryfont + 2), justify=LEFT)
-        self.e2.grid(column=1, row=1, pady=5, padx=0, sticky=W)
+        self.e2.configure(bg=vtsmoke, relief='sunken', bd=2, font=('Arial', entryfont + 2), justify='left')
+        self.e2.grid(column=1, row=1, pady=5, padx=0, sticky='w')
         # Drop-Down of the column headings in the master CSV file
         labl3 = Label(frame1, text='CSV Col.\nw/ ID\'s:')
-        labl3.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify=CENTER)
-        labl3.grid(column=0, row=2, pady=5, padx=5, sticky=E)
+        labl3.configure(fg='black', bg=vtgray, bd=0, font=('Arial', basefont), height=2, width=9, justify='center')
+        labl3.grid(column=0, row=2, pady=5, padx=5, sticky='e')
         self.variable = StringVar(frame1)
         self.options = StringVar(frame1)
         self.options.trace('r', self.get_headers)
         firstone = ["Select CSV", "Then \'Refresh\'"]
         self.hdmenu = OptionMenu(frame1, self.variable, *firstone)
         self.hdmenu.configure(width=20, bg=vtmaroon, font=('Arial', basefont + 2))
-        self.hdmenu.grid(column=1, row=2, pady=5, padx=0, sticky=E)
+        self.hdmenu.grid(column=1, row=2, pady=5, padx=0, sticky='e')
         self.e3 = Entry(frame1, width=24, textvariable=self.variable)
-        self.e3.configure(bg=vtsmoke, relief=SUNKEN, bd=2, font=('Arial', entryfont + 2), justify=LEFT)
-        self.e3.grid(column=1, row=2, pady=5, padx=0, sticky=W)
+        self.e3.configure(bg=vtsmoke, relief='sunken', bd=2, font=('Arial', entryfont + 2), justify='left')
+        self.e3.grid(column=1, row=2, pady=5, padx=0, sticky='w')
         refresh1 = Button(frame1, text='Refresh', command=lambda: self.get_headers(csvfile))
         refresh1.configure(bg=vtsmoke, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
-        refresh1.grid(column=2, row=2, pady=5, padx=5, sticky=W)
-        frame1.configure(bg=vtmaroon, bd=5, relief=RAISED)
-        frame1.grid(column=0, row=1, pady=0, padx=0, sticky=NSEW)
+        refresh1.grid(column=2, row=2, pady=5, padx=5, sticky='w')
+        frame1.configure(bg=vtmaroon, bd=5, relief='raised')
+        frame1.grid(column=0, row=1, pady=0, padx=0, sticky='nsew')
         # Checkbuttons
         frame2 = ToggleFrame(root)
-        frame2.configure(bg=hokiestone, bd=5, relief=SUNKEN)
-        frame2.grid(column=0, row=2, pady=0, padx=0, sticky=N)
+        frame2.configure(bg=hokiestone, bd=5, relief='sunken')
+        frame2.grid(column=0, row=2, pady=0, padx=0, sticky='n')
         # Buttons for Quit, Instructions, and Submit
         frame3 = Frame(root)
         cancel1 = Button(frame3, text='Quit', command=root.quit)
         cancel1.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
-        cancel1.grid(column=0, row=0, pady=5, padx=xpadd, sticky=E)
+        cancel1.grid(column=0, row=0, pady=5, padx=xpadd, sticky='e')
         instruct = Button(frame3, text='Instructions', command=lambda: instructions(basefont))
         instruct.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
-        instruct.grid(column=1, row=0, pady=5, padx=buttonpad, sticky=E)
+        instruct.grid(column=1, row=0, pady=5, padx=buttonpad, sticky='e')
         submit1 = Button(frame3, text='Submit', command=lambda: self.run_procs(root, frame2))
         submit1.configure(bg=vtwhite, fg='black', highlightbackground=vtmaroon, font=('Arial', entryfont))
-        submit1.grid(column=2, row=0, pady=5, padx=xpadd, sticky=E)
-        frame3.configure(bg=vtmaroon, bd=5, relief=RAISED)
-        frame3.grid(column=0, row=3, pady=0, padx=0, sticky=NSEW)
+        submit1.grid(column=2, row=0, pady=5, padx=xpadd, sticky='e')
+        frame3.configure(bg=vtmaroon, bd=5, relief='raised')
+        frame3.grid(column=0, row=3, pady=0, padx=0, sticky='nsew')
 
     def ask_folder(self, foname):
-        foname.set(os.path.abspath(askdirectory(initialdir=os.getcwd(), title='Select the Folder')))
+        foname.set(path.abspath(askdirectory(initialdir=getcwd(), title='Select the Folder')))
         return foname
 
     def ask_file(self, fname):
-        fname.set(os.path.abspath(askopenfilename(initialdir=os.getcwd(), title='Select the master CSV File')))
+        fname.set(path.abspath(askopenfilename(initialdir=getcwd(), title='Select the master CSV File')))
         return fname
 
     def get_headers(self, *args):
         """ Retrieves the options for the drop-down menu of CSV headers """
         csvfi = self.e2.get()
-        csvpath = os.path.join(str(csvfi))
-        if os.path.exists(csvpath) and os.path.splitext(csvpath)[1] == '.csv':
-            with open(csvfi, 'r') as cfile:
+        csvpath = path.join(str(csvfi))
+        if path.exists(csvpath) and path.splitext(csvpath)[1] == '.csv':
+            with open(csvfi, 'r', encoding='utf-8') as cfile:
                 hreader = csv.DictReader(cfile)
                 opts = hreader.fieldnames
         else:
@@ -286,10 +298,10 @@ class ObjFormatter:
         This could be done using a CSV-to-XML conversion, but it's easier to
         just read the values for the fields and write the RDF file manually.
         """
-        if not os.path.exists(metacsv):
-            tkMessageBox.showwarning(message="Error: The \'metadata.csv\' was not found.\nRDF file not created.")
+        if not path.exists(metacsv):
+            messagebox.showwarning(message="Error: The \'metadata.csv\' was not found.\nRDF file not created.")
             return False
-        with open(metacsv, 'rb') as src:
+        with open(metacsv, 'r', encoding='utf-8') as src:
             reader2 = csv.DictReader(src)
             headrow2 = reader2.fieldnames
             for row in reader2:
@@ -302,7 +314,7 @@ class ObjFormatter:
                 objURI = str(row['Object URI'])
                 collURI = str(row['Collection URI'])
         src.close()
-        # tkMessageBox.showwarning(message="It got this far! Next step is create the Graph.")
+        # messagebox.showwarning(message="It got this far! Next step is create the Graph.")
         g = Graph()
         # Namespaces
         rdf = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
@@ -334,29 +346,29 @@ class ObjFormatter:
         metsCustodian = URIRef('http://www.loc.gov/standards/mets/mets.xsd#CUSTODIAN')
         g.bind('custodian', metsCustodian, False)
         # Adding the triples to the Graph
-        g.add((object, dcterms.identifier, Literal('%s' %sysUUID)))
-        g.add((object, mets.OBJID, Literal('%s' %sysUUID)))
-        g.add((object, mets.altRecordID, Literal('%s' %localID)))
+        g.add((object, dcterms.identifier, Literal('%s' % sysUUID)))
+        g.add((object, mets.OBJID, Literal('%s' % sysUUID)))
+        g.add((object, mets.altRecordID, Literal('%s' % localID)))
         g.add((object, dc.contributor, deptID))
         g.add((deptID, rdf.type, foaf.Group))
         g.add((deptID, mets.ROLE, metsCustodian))
-        g.add((deptID, foaf.name, Literal('%s' %deptName)))
+        g.add((deptID, foaf.name, Literal('%s' % deptName)))
         g.add((object, dc.contributor, persID))
         g.add((persID, rdf.type, foaf.Person))
         g.add((persID, mets.ROLE, metsCustodian))
-        g.add((persID, foaf.mbox, Literal('%s (at) vt (dot) edu' %persVTID)))
+        g.add((persID, foaf.mbox, Literal('%s (at) vt (dot) edu' % persVTID)))
         # g.add((persID, foaf.name, Literal('%s' %persName)))
         g.add((object, dcterms.isPartOf, collectID))
-        g.add((collectID, foaf.name, Literal('%s' %collName)))
-        g.add((object, dcterms.description, Literal('%s' %description)))
-        newrdf = os.path.join(os.path.dirname(metacsv), 'metadata.xml')
+        g.add((collectID, foaf.name, Literal('%s' % collName)))
+        g.add((object, dcterms.description, Literal('%s' % description)))
+        newrdf = path.join(path.dirname(metacsv), 'metadata.xml')
         serialrdf = g.serialize(format='pretty-xml')
         # serialjson = g.serialize(format='json-ld')
         with open(newrdf, 'wb') as outrdf:
             outrdf.write(serialrdf)
         outrdf.close()
-        # jsonfile = os.path.join(os.path.dirname(metacsv), 'metadata.json')
-        # with open(jsonfile, 'wb') as outjson:
+        # jsonfile = path.join(path.dirname(metacsv), 'metadata.json')
+        # with open(jsonfile, 'w', encoding='utf-8') as outjson:
         #     outjson.write(serialjson)
         # outjson.close()
         return True
@@ -366,32 +378,35 @@ class ObjFormatter:
         rfiles = 0
         overwrite_all = False
         firstone = True
-        with open(csvIn, 'rb') as incsv:
+        with open(csvIn, 'r', encoding='utf-8') as incsv:
             reader = csv.DictReader(incsv)
             headers = reader.fieldnames
-            verifyHeadrs = ['System UUID', 'Local ID', 'Department Responsible', 'Person Responsible', 'Collection', 'Brief Description', 'Object URI', 'Collection URI']
+            verifyHeadrs = ['System UUID', 'Local ID', 'Department Responsible', 'Person Responsible', 'Collection',
+                            'Brief Description', 'Object URI', 'Collection URI']
             if not headers == verifyHeadrs:
-                tkMessageBox.showwarning(message="Your input CSV is not formatted correctly.\n\nQuitting action.")
+                messagebox.showwarning(message="Your input CSV is not formatted correctly.\n\nQuitting action.")
                 return [0, 0]
             for row in reader:
                 skip1 = False
-                foldname = row['%s' %locids]
-                foldpath = os.path.join(fpath, foldname)
-                if not os.path.exists(foldpath):
+                foldname = row['%s' % locids]
+                foldpath = path.join(fpath, foldname)
+                if not path.exists(foldpath):
                     skip1 = True
                 # The function skips objects that are Bags or already have a
                 # 'metadata.csv' file. Thus it skips creating a 'metadata.xml'
                 # for these objects also.
-                if os.path.exists(os.path.join(foldpath, 'data')):
-                    skip1 = tkMessageBox.askyesno(message="It appears that \'%s\' is a bag.\n\nSkip creating \'metadata.csv\' for this one item?" %foldname)
-                if os.path.exists(os.path.join(foldpath, 'metadata.csv')) and firstone == True:
+                if path.exists(path.join(foldpath, 'data')):
+                    skip1 = messagebox.askyesno(
+                        message="It appears that \'%s\' is a bag.\n\nSkip creating \'metadata.csv\' for this one item?" % foldname)
+                if path.exists(path.join(foldpath, 'metadata.csv')) and firstone == True:
                     firstone = False
-                    overwrite_all = tkMessageBox.askyesno(message="At least one \'metadata.csv\' already\nexists. Overwrite ALL of them?")
-                if os.path.exists(os.path.join(foldpath, 'metadata.csv')) and overwrite_all == False:
+                    overwrite_all = messagebox.askyesno(
+                        message="At least one \'metadata.csv\' already\nexists. Overwrite ALL of them?")
+                if path.exists(path.join(foldpath, 'metadata.csv')) and overwrite_all == False:
                     skip1 = True
                 if skip1 == False:
-                    metafile = os.path.join(foldpath, 'metadata.csv')
-                    with open(metafile, 'wb') as newmeta:
+                    metafile = path.join(foldpath, 'metadata.csv')
+                    with open(metafile, 'w') as newmeta:
                         metawriter = csv.DictWriter(newmeta, fieldnames=headers)
                         metawriter.writeheader()
                         metawriter.writerow(row)
@@ -407,11 +422,12 @@ class ObjFormatter:
         Generates minimal metadata files, 'metadata.csv' and 'metadata.xml'
         based on a master CSV or a METS xml file
         """
-        sourcetype = 'csv' # default
-        if os.path.splitext(myfile)[1] == '.csv':
+        sourcetype = 'csv'  # default
+        counts = [0, 0]  # default
+        if path.splitext(myfile)[1] == '.csv':
             sourcetype = 'csv'
         else:
-            tkMessageBox.showwarning(message="The metadata source file must be CSV.\nQuitting action.")
+            messagebox.showwarning(message="The metadata source file must be CSV.\nQuitting action.")
             runnext1 = False
             return runnext1
         if sourcetype == 'csv':
@@ -420,10 +436,13 @@ class ObjFormatter:
             if self.prompting == 0:
                 runnext1 = True
             else:
-                runnext1 = tkMessageBox.askyesno(message="Created %d \'metadata.csv\' and %d \'metadata.xml\' files.\n\nProceed with the next action?" %(counts[0], counts[1]))
+                runnext1 = messagebox.askyesno(
+                    message="Created %d \'metadata.csv\' and %d \'metadata.xml\' files.\n\nProceed with the next action?" % (
+                        counts[0], counts[1]))
         else:
             runnext1 = False
-            tkMessageBox.showwarning(message="Created %d \'metadata.csv\' and %d \'metadata.xml\' files." %(counts[0], counts[1]))
+            messagebox.showwarning(
+                message="Created %d \'metadata.csv\' and %d \'metadata.xml\' files." % (counts[0], counts[1]))
         return runnext1
 
     def gen_ID(self):
@@ -444,28 +463,29 @@ class ObjFormatter:
         """
         renamed = 0
         rfiles = 0
-        logfile = os.path.join(ofolder, 'log4preservation.csv')
-        if not os.path.exists(logfile):
-            with open(logfile, 'wb') as lfile:
+        logfile = path.join(ofolder, 'log4preservation.csv')
+        if not path.exists(logfile):
+            with open(logfile, 'w', encoding='utf-8') as lfile:
                 headrow = ['SysUID', 'LocalID', 'RegisDateTime', 'RegisPerson']
                 writer = csv.DictWriter(lfile, fieldnames=headrow)
                 writer.writeheader()
             lfile.close()
-        for fo in os.listdir(ofolder):
+        for fo in listdir(ofolder):
             skip3 = False
-            fopath = os.path.join(ofolder, fo)
-            if not os.path.isdir(fopath):
+            fopath = path.join(ofolder, fo)
+            if not path.isdir(fopath):
                 skip3 = True
-            elif os.path.isdir(fopath):
-                metapath = os.path.join(fopath, 'metadata.csv')
-                oldrdf = os.path.join(fopath, 'metadata.xml')
-                # oldjson = os.path.join(fopath, 'metadata.json')
-                if not os.path.exists(metapath):
+            elif path.isdir(fopath):
+                metapath = path.join(fopath, 'metadata.csv')
+                oldrdf = path.join(fopath, 'metadata.xml')
+                # oldjson = path.join(fopath, 'metadata.json')
+                if not path.exists(metapath):
                     skip3 = True
-                    tkMessageBox.showwarning(message="Could not find:\n\'%s\'.\n\nSkipping registration of:\n%s." %(metapath, fo))
+                    messagebox.showwarning(
+                        message="Could not find:\n\'%s\'.\n\nSkipping registration of:\n%s." % (metapath, fo))
                 if not skip3:
                     newID = self.gen_ID()
-                    with open(metapath, 'rb') as oldmeta:
+                    with open(metapath, 'r', encoding='utf-8') as oldmeta:
                         r = csv.reader(oldmeta)
                         lines = list(r)
                         lines[1][0] = newID
@@ -474,30 +494,31 @@ class ObjFormatter:
                         log3 = time.strftime("%Y.%m.%d %H:%M:%S")
                         log4 = lines[1][3]
                         logline = [log1, log2, log3, log4]
-                    with open(logfile, 'a') as logoutf:
+                    with open(logfile, 'a', encoding='utf-8') as logoutf:
                         cwriter = csv.writer(logoutf)
                         cwriter.writerow(logline)
-                    with open(metapath, 'wb') as outmeta:
+                    with open(metapath, 'w', encoding='utf-8') as outmeta:
                         w = csv.writer(outmeta)
                         w.writerows(lines)
-                    if os.path.exists(oldrdf):
-                        os.remove(oldrdf)
-                    # if os.path.exists(oldjson):
-                    #     os.remove(oldjson)
+                    if path.exists(oldrdf):
+                        remove(oldrdf)
+                    # if path.exists(oldjson):
+                    #     remove(oldjson)
                     rdfok = self.make_rdf(metapath)
                     if rdfok == True:
                         rfiles += 1
-                    newpath = os.path.join(os.path.dirname(fopath), '%s' %newID)
-                    os.rename(fopath, newpath)
+                    newpath = path.join(path.dirname(fopath), '%s' % newID)
+                    rename(fopath, newpath)
                     renamed += 1
         if not moreopts2 == 0:
             if self.prompting == 0:
                 runnext2 = True
             else:
-                runnext2 = tkMessageBox.askyesno(message="Registered %d objects.\n\nProceed with the next action?" %renamed)
+                runnext2 = messagebox.askyesno(
+                    message="Registered %d objects.\n\nProceed with the next action?" % renamed)
         else:
             runnext2 = False
-            tkMessageBox.showwarning(message="Registered %d objects." %renamed)
+            messagebox.showwarning(message="Registered %d objects." % renamed)
         return runnext2
 
     def md5(self, finame):
@@ -511,7 +532,7 @@ class ObjFormatter:
     def sha3hash(self, filname):
         """ Generates SHA3-256 hashes """
         chunksize = io.DEFAULT_BUFFER_SIZE
-        hash_sha3 = sha3.sha3_256()
+        hash_sha3 = hashlib.sha3_256()
         with open(filname, "rb") as sha3file:
             for chunks in iter(lambda: sha3file.read(chunksize), b""):
                 hash_sha3.update(chunks)
@@ -525,52 +546,54 @@ class ObjFormatter:
         # i = int(math.floor(math.log(size,1024)))
         # p = math.pow(1024,i)
         size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-        i = int(math.floor(math.log(size,1000)))
-        p = math.pow(1000,i)
-        s = round(size/p,2)
-        return '%s%s' % (s,size_name[i])
+        i = int(math.floor(math.log(size, 1000)))
+        p = math.pow(1000, i)
+        s = round(size / p, 2)
+        return '%s%s' % (s, size_name[i])
 
     def run_inventory(self, indir, moreopts3):
         """
         Runs an inventory and generates 'manifest.csv' files for each object
         """
         manifiles = 0
-        for obj in os.listdir(indir):
-            objpath = os.path.join(indir, obj)
+        for obj in listdir(indir):
+            objpath = path.join(indir, obj)
             skipit = False
             counter = 0
-            if not os.path.isdir(objpath):
+            if not path.isdir(objpath):
                 skipit = True
-            elif os.path.isdir(objpath):
-                if os.path.exists(os.path.join(objpath, 'data')):
-                    isabag = tkMessageBox.askyesno(message="It appears that \'%s\' is a bag.\nSkip this object?" %obj)
+            elif path.isdir(objpath):
+                if path.exists(path.join(objpath, 'data')):
+                    isabag = messagebox.askyesno(message="It appears that \'%s\' is a bag.\nSkip this object?" % obj)
                     if isabag == True:
                         skipit = True
-                if os.path.exists(os.path.join(objpath, 'manifest.csv')):
+                if path.exists(path.join(objpath, 'manifest.csv')):
                     skipit = True
-                    tkMessageBox.showwarning(message="The file \'manifest.csv\' already exists.\nSkipping inventory of the object: \n\'%s\'" %obj)
+                    messagebox.showwarning(
+                        message="The file \'manifest.csv\' already exists.\nSkipping inventory of the object: \n\'%s\'" % obj)
             if skipit == False:
                 manifiles += 1
-                tempmani = open(os.path.join(indir, 'temp_manifest.csv'), 'wb')
-                tempmani.write("No., Filename, Filesize, Filetype, C-Time, Modified, Accessed, MD5_Sum, SHA3_256, ChecksumDateTime, RelPath, => , mode, inode, device, enlink, user, group\n")
-                workdir = os.path.dirname(objpath)
-                for base, dirs, files in os.walk(objpath):
+                tempmani = open(path.join(indir, 'temp_manifest.csv'), 'w', encoding='utf-8')
+                tempmani.write(
+                    "No., Filename, Filesize, Filetype, C-Time, Modified, Accessed, MD5_Sum, SHA3_256, ChecksumDateTime, RelPath, => , mode, inode, device, enlink, user, group\n")
+                workdir = path.dirname(objpath)
+                for base, dirs, files in walk(objpath):
                     for name in files:
-                        filepathname = os.path.join(base, name)
+                        filepathname = path.join(base, name)
                         # Deletes .DS_Store Files
-                        if os.path.basename(filepathname) == '.DS_Store':
-                            os.remove(filepathname)
-                        elif not os.path.basename(filepathname) == '.DS_Store':
+                        if path.basename(filepathname) == '.DS_Store':
+                            remove(filepathname)
+                        elif not path.basename(filepathname) == '.DS_Store':
                             counter += 1
                             rownum = str(counter)
-                            statinfo = os.stat(filepathname)
+                            statinfo = stat(filepathname)
                             filesize = statinfo[6]
                             csize = self.convert_size(filesize)
                             filemime = str(mimetypes.guess_type(filepathname)[0])
                             filectime = time.strftime("%Y.%m.%d %H:%M:%S", time.localtime(statinfo.st_ctime))
                             # note: on a Windows system, ctime is "date created" but on Unix it is
                             # "change time", i.e. the last time the metadata was changed.
-                            modifdate = time.strftime("%Y.%m.%d %H:%M:%S",time.localtime(statinfo.st_mtime))
+                            modifdate = time.strftime("%Y.%m.%d %H:%M:%S", time.localtime(statinfo.st_mtime))
                             accessdate = time.strftime("%Y.%m.%d %H:%M:%S", time.localtime(statinfo.st_atime))
                             md5sum = self.md5(filepathname)
                             sha3sum = self.sha3hash(filepathname)
@@ -583,51 +606,56 @@ class ObjFormatter:
                             filegroup = str(statinfo.st_gid)
                             # Displays a shortened Path for each file, excluding the directories
                             # that precede the working directory that contains the objects.
-                            showpath = os.path.relpath(filepathname, workdir)
-                            tempmani.write("%s," %rownum + "\"%s\"," %name + "%s," %csize + "\"%s\"," %filemime + "%s," %filectime + "%s," %modifdate + "%s," %accessdate + "%s," %md5sum + "%s," %sha3sum + "%s," %runtime + "\"%s\"," %showpath)
-                            tempmani.write(" ,%s," %filemode + "%s," %fileino + "%s," %filedevice + "%s," %filenlink + "%s," %fileuser + "%s\n" %filegroup)
+                            showpath = path.relpath(filepathname, workdir)
+                            tempmani.write(
+                                "%s," % rownum + "\"%s\"," % name + "%s," % csize + "\"%s\"," % filemime + "%s," % filectime + "%s," % modifdate + "%s," % accessdate + "%s," % md5sum + "%s," % sha3sum + "%s," % runtime + "\"%s\"," % showpath)
+                            tempmani.write(
+                                " ,%s," % filemode + "%s," % fileino + "%s," % filedevice + "%s," % filenlink + "%s," % fileuser + "%s\n" % filegroup)
                 tempmani.write("Comments, \n")
                 tempmani.close()
-                tomove = os.path.join(os.path.dirname(objpath), 'temp_manifest.csv')
-                moveto = os.path.join(objpath, 'manifest.csv')
+                tomove = path.join(path.dirname(objpath), 'temp_manifest.csv')
+                moveto = path.join(objpath, 'manifest.csv')
                 shutil.move(tomove, moveto)
         if not moreopts3 == 0:
             if self.prompting == 0:
                 runnext3 = True
             else:
-                runnext3 = tkMessageBox.askyesno(message="Created %d \'manifest.csv\' files.\n\nProceed with the next action?" %manifiles)
+                runnext3 = messagebox.askyesno(
+                    message="Created %d \'manifest.csv\' files.\n\nProceed with the next action?" % manifiles)
         else:
             runnext3 = False
-            tkMessageBox.showwarning(message="Created %d \'manifest.csv\' files." %manifiles)
+            messagebox.showwarning(message="Created %d \'manifest.csv\' files." % manifiles)
         return runnext3
 
     def run_bagit(self, bagsdir, moreopts4):
         """ Bags all objects in a single directory """
         validbags = 0
         totalbags = 0
-        for f in os.listdir(bagsdir):
-            inpath = os.path.join(bagsdir, f)
+        for f in listdir(bagsdir):
+            inpath = path.join(bagsdir, f)
             cont = True
-            if os.path.isdir(inpath):
-                if os.path.exists(os.path.join(inpath, 'data')):
-                    cont = tkMessageBox.askyesno(message="It appears that \'%s\' is already a bag.\nBag it anyway?" %f)
+            if path.isdir(inpath):
+                if path.exists(path.join(inpath, 'data')):
+                    cont = messagebox.askyesno(message="It appears that \'%s\' is already a bag.\nBag it anyway?" % f)
                 if cont == True:
                     newbag = bagit.make_bag(inpath, checksums=['md5', 'sha512'])
                     totalbags += 1
                     if newbag.is_valid():
                         validbags += 1
                     elif not newbag.is_valid():
-                        tkMessageBox.showwarning(message="Bag \'%s\' is not a valid bag." %f)
+                        messagebox.showwarning(message="Bag \'%s\' is not a valid bag." % f)
                 # elif cont == False:
-                #     tkMessageBox.showwarning(message="Skipped bagging of \'%s\'." %f)
+                #     messagebox.showwarning(message="Skipped bagging of \'%s\'." %f)
         if not moreopts4 == 0:
             if self.prompting == 0:
                 runnext4 = True
             else:
-                runnext4 = tkMessageBox.askyesno(message="Created %d total bags,\nof which %d are valid.\n\nProceed with the next action?" %(totalbags, validbags))
+                runnext4 = messagebox.askyesno(
+                    message="Created %d total bags,\nof which %d are valid.\n\nProceed with the next action?" % (
+                        totalbags, validbags))
         else:
             runnext4 = False
-            tkMessageBox.showwarning(message="Created %d total bags,\nof which %d are valid." %(totalbags, validbags))
+            messagebox.showwarning(message="Created %d total bags,\nof which %d are valid." % (totalbags, validbags))
         return runnext4
 
     def run_tar(self, tarfolder, moreopts5):
@@ -635,36 +663,39 @@ class ObjFormatter:
         tarfiles = 0
         alreadytar = 0
         notfolder = 0
-        outfolder = os.path.splitext(tarfolder)[0] + '-tarred'
-        if not os.path.exists(outfolder):
-            os.mkdir(outfolder)
-        for i in os.listdir(tarfolder):
-            infile = os.path.join(tarfolder, i)
-            if os.path.isdir(infile):
-                outfile = os.path.join(outfolder, os.path.splitext(i)[0] + '.tar')
-                if os.path.exists(outfile):
-                    tkMessageBox.showwarning(message="The TAR file: \n\'%s\'\nalready exists!\nTar archive not created." %outfile)
+        outfolder = path.splitext(tarfolder)[0] + '-tarred'
+        if not path.exists(outfolder):
+            mkdir(outfolder)
+        for i in listdir(tarfolder):
+            infile = path.join(tarfolder, i)
+            if path.isdir(infile):
+                outfile = path.join(outfolder, path.splitext(i)[0] + '.tar')
+                if path.exists(outfile):
+                    messagebox.showwarning(
+                        message="The TAR file: \n\'%s\'\nalready exists!\nTar archive not created." % outfile)
                     alreadytar += 1
-                elif not os.path.exists(outfile):
+                elif not path.exists(outfile):
                     # with tarfile.open(outfile, 'w:gz') as newtar:
                     with tarfile.open(outfile, 'w') as newtar:
-                        tarname = os.path.relpath(infile, tarfolder)
-                        newtar.add(infile, arcname='%s' %tarname)
+                        tarname = path.relpath(infile, tarfolder)
+                        newtar.add(infile, arcname='%s' % tarname)
                     tarfiles += 1
             else:
                 notfolder += 1
         if not alreadytar == 0:
-            tkMessageBox.showwarning(message="The folder \'%s\' already contained %d tar files which were skipped." %(outfolder, alreadytar))
+            messagebox.showwarning(message="The folder \'%s\' already contained %d tar files which were skipped." % (
+                outfolder, alreadytar))
         # if not notfolder == 0:
-        #    tkMessageBox.showwarning(message="The target folder contained %d files, which were ignored." %notfolder)
+        #    messagebox.showwarning(message="The target folder contained %d files, which were ignored." %notfolder)
         if not moreopts5 == 0:
             if self.prompting == 0:
                 runnext5 = True
             else:
-                runnext5 = tkMessageBox.askyesno(message="Created %d tar archives.\n\nProceed with the next action?" %tarfiles)
+                runnext5 = messagebox.askyesno(
+                    message="Created %d tar archives.\n\nProceed with the next action?" % tarfiles)
         else:
             runnext5 = False
-            tkMessageBox.showwarning(message="Created %d tar archives." %tarfiles)
+            messagebox.showwarning(message="Created %d tar archives." % tarfiles)
         return runnext5
 
     def trans_manifest(self, indirectory):
@@ -672,28 +703,32 @@ class ObjFormatter:
         Generates a manifest of filenames and checksums for a directory of
         Bagged and Tarred objects
         """
-        askingdir = os.path.join(os.path.basename(os.path.dirname(indirectory)), os.path.basename(indirectory))
-        tardest = tkMessageBox.askyesno(message="Create manifest of \'%s-tarred\'?" %askingdir, default='yes')
-        if tardest == True:
+        askingdir = path.join(path.basename(path.dirname(indirectory)), path.basename(indirectory))
+        indir = ""
+        tardest = messagebox.askyesno(message="Create manifest of \'%s-tarred\'?" % askingdir, default='yes')
+        if tardest:
             indir = indirectory + "-tarred"
-        elif tardest == False:
-            indir = askdirectory(initialdir=os.path.dirname(indirectory), title="In which folder are the objects to be transferred?")
-        if not os.path.exists(indir):
-            tkMessageBox.showwarning(message="The directory: \n\'%s\'\n does not exist.\n\nCancelling action." %indir)
+        elif not tardest:
+            indir = askdirectory(initialdir=path.dirname(indirectory),
+                                 title="In which folder are the objects to be transferred?")
+        if not path.exists(indir):
+            messagebox.showwarning(message="The directory: \n\'%s\'\n does not exist.\n\nCancelling action." % indir)
             return
-        outdir = os.path.dirname(indir)
-        # tkMessageBox.showwarning(message="The transfer manifest will be saved in: \n\'%s\'" %outdir)
-        compfile = open(os.path.join(outdir, "Transfer_%s_%s.csv" %(os.path.basename(indir), time.strftime("%m%d_%H%M%S"))), "wb")
-        for base, dirs, files in os.walk(indir):
+        outdir = path.dirname(indir)
+        # messagebox.showwarning(message="The transfer manifest will be saved in: \n\'%s\'" %outdir)
+        compfile = open(
+            path.join(outdir, "Transfer_%s_%s.csv" % (path.basename(indir), time.strftime("%m%d_%H%M%S"))), 'w',
+            encoding='utf-8')
+        for base, dirs, files in walk(indir):
             for name in files:
-                pathname = os.path.join(base, name)
-                if os.path.basename(pathname) == '.DS_Store':
-                    os.remove(pathname)
-                elif not os.path.basename(pathname) == '.DS_Store':
+                pathname = path.join(base, name)
+                if path.basename(pathname) == '.DS_Store':
+                    remove(pathname)
+                elif not path.basename(pathname) == '.DS_Store':
                     sha3sum = self.sha3hash(pathname)
-                    compfile.write("%s, " %name + "%s\n" %sha3sum)
+                    compfile.write("%s, " % name + "%s\n" % sha3sum)
         compfile.close()
-        tkMessageBox.showwarning(message="Transfer Manifest Created.")
+        messagebox.showwarning(message="Transfer Manifest Created.")
         return
 
     def pre_pack(self, packdir):
@@ -701,20 +736,20 @@ class ObjFormatter:
         Preserves departmental folder structure during Bagging by moving
         object contents into a subdirectory named with the local object ID
         """
-        for item in os.listdir(packdir):
-            olditempath = os.path.join(packdir, item)
-            if os.path.isdir(olditempath):
-                newdirpath = os.path.join(olditempath, os.path.basename(olditempath))
-                temppath = os.path.join(olditempath, 'temptemptemp')
+        for item in listdir(packdir):
+            olditempath = path.join(packdir, item)
+            if path.isdir(olditempath):
+                newdirpath = path.join(olditempath, path.basename(olditempath))
+                temppath = path.join(olditempath, 'temptemptemp')
                 shutil.copytree(olditempath, temppath)
-                for thing in os.listdir(olditempath):
-                    thingpath = os.path.join(olditempath, thing)
+                for thing in listdir(olditempath):
+                    thingpath = path.join(olditempath, thing)
                     if not thing == 'temptemptemp':
-                        if os.path.isdir(thingpath):
+                        if path.isdir(thingpath):
                             shutil.rmtree(thingpath)
                         elif not 'meta' in thing:
-                            os.remove(thingpath)
-                os.rename(temppath, newdirpath)
+                            remove(thingpath)
+                rename(temppath, newdirpath)
         return packdir
 
     def run_procs(self, root, frame2):
@@ -732,16 +767,18 @@ class ObjFormatter:
             if d == 1:
                 nselect += 1
         if olditemsdir == "":
-            tkMessageBox.showwarning(message="You must first select a folder.")
+            messagebox.showwarning(message="You must first select a folder.")
             return
-        if not os.path.exists(olditemsdir):
-            tkMessageBox.showwarning(message="Items folder:\n\'%s\'\nnot found." %olditemsdir)
+        if not path.exists(olditemsdir):
+            messagebox.showwarning(message="Items folder:\n\'%s\'\nnot found." % olditemsdir)
             return
         if nselect == 0:
-            tkMessageBox.showwarning(message="You have not selected any \'Options\'.")
+            messagebox.showwarning(message="You have not selected any \'Options\'.")
             return
         # PrePack items
-        prepack = tkMessageBox.askyesno(title="Pre-Packaging", message="Is this the first time running UDOF on THESE items?\n(Clicking \'yes\' will \'pre-package\' them.)", default='no')
+        prepack = messagebox.askyesno(title="Pre-Packaging",
+                                      message="Is this the first time running UDOF on THESE items?\n(Clicking \'yes\' will \'pre-package\' them.)",
+                                      default='no')
         if prepack == False:
             itemsdir = olditemsdir
         else:
@@ -752,13 +789,13 @@ class ObjFormatter:
             metainput = self.e2.get()
             idcolumn = self.e3.get()
             if metainput == "":
-                tkMessageBox.showwarning(message="You must choose a CSV master metadata file.")
+                messagebox.showwarning(message="You must choose a CSV master metadata file.")
                 return
-            if not os.path.exists(metainput):
-                tkMessageBox.showwarning(message="CSV file:\n\'%s\'\nnot found. Stopping action." %metainput)
+            if not path.exists(metainput):
+                messagebox.showwarning(message="CSV file:\n\'%s\'\nnot found. Stopping action." % metainput)
                 return
-            if os.path.splitext(metainput)[1] == '.csv' and idcolumn == "":
-                tkMessageBox.showwarning(message="You must choose the column of ID's in the CSV.")
+            if path.splitext(metainput)[1] == '.csv' and idcolumn == "":
+                messagebox.showwarning(message="You must choose the column of ID's in the CSV.")
                 return
             runnext = self.create_meta(root, itemsdir, metainput, idcolumn, nselect)
             if runnext == False:
@@ -792,37 +829,40 @@ class ObjFormatter:
             self.trans_manifest(itemsdir)
         return
 
+
 def instructions(fontsize):
-    new = Tk()
+    new = Toplevel()
     nw = 850
     nh = 600
-    nws = new.winfo_screenwidth() # width of the screen
-    nhs = new.winfo_screenheight() # height of the screen
-    nx = (nws/2) - (nw/2)
-    ny = (nhs/2) - (nh/2)
-    new.geometry('%dx%d+%d+%d' %(nw, nh, nx, ny))
+    nws = new.winfo_screenwidth()  # width of the screen
+    nhs = new.winfo_screenheight()  # height of the screen
+    nx = (nws / 2) - (nw / 2)
+    ny = (nhs / 2) - (nh / 2)
+    new.geometry('%dx%d+%d+%d' % (nw, nh, nx, ny))
     new.title('U-Pack Instructions')
     new.configure(bg=vtmaroon, pady=5, padx=5)
     new.grid_propagate(False)
     new.grid_rowconfigure(0, weight=1)
     new.grid_columnconfigure(0, weight=1)
-    txt = Text(new, relief=SUNKEN, bd=4, fg='black', bg=vtsmoke)
+    txt = Text(new, relief='sunken', bd=4, fg='black', bg=vtsmoke)
     txt.config(pady=10, padx=40, font=('Times', fontsize), wrap='word')
-    txt.grid(column=0, row=0, sticky=NSEW)
+    txt.grid(column=0, row=0, sticky='nsew')
     scroller = Scrollbar(new, orient='vertical', command=txt.yview)
-    scroller.grid(column=1, row=0, sticky=NSEW)
+    scroller.grid(column=1, row=0, sticky='nsew')
     txt['yscrollcommand'] = scroller.set
     OKa = Button(new, command=new.destroy, text='OK')
-    OKa.configure(bg=hokiestone, bd=4, fg='black', font=('Arial', fontsize), highlightbackground=vtmaroon, relief=RAISED)
-    OKa.grid(column=0, row=1, sticky=NSEW)
+    OKa.configure(bg=hokiestone, bd=4, fg='black', font=('Arial', fontsize), highlightbackground=vtmaroon,
+                  relief='raised')
+    OKa.grid(column=0, row=1, sticky='nsew')
     instructtext = resource_path("UPackInstructions.txt")
-    if os.path.exists(instructtext):
+    if path.exists(instructtext):
         with open(instructtext) as inst:
             quote = inst.read()
-            txt.insert(END, quote)
+            txt.insert('end', quote)
     else:
         pathstring = str(instructtext)
-        tkMessageBox.showwarning(message="Cannot find the file:\n\'%s\'." %pathstring)
+        messagebox.showwarning(message="Cannot find the file:\n\'%s\'." % pathstring)
+
 
 def main():
     root = tk.Tk()
@@ -837,9 +877,9 @@ def main():
         h = 562
     ws = root.winfo_screenwidth()
     hs = root.winfo_screenheight()
-    x = (ws/2) - (w/2)
-    y = (hs/2) - (h/2)
-    root.geometry('%dx%d+%d+%d' %(w, h, x, y))
+    x = (ws / 2) - (w / 2)
+    y = (hs / 2) - (h / 2)
+    root.geometry('%dx%d+%d+%d' % (w, h, x, y))
     root.title('U-Pack Digital Object Formatter')
     root.configure(bg=vtorange, bd=4)
     # Run main app
@@ -848,6 +888,7 @@ def main():
     root.attributes("-topmost", True)
     root.after_idle(root.attributes, "-topmost", False)
     root.mainloop()
+
 
 if __name__ == '__main__':
     main()
